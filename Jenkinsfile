@@ -16,16 +16,10 @@ pipeline {
         stage('Deploy') {
             steps {
                 echo 'Deploying to server...'
-
-        sh """
-
-            rsync -avz --exclude='.git' ./ ubuntu@192.168.30.10:~/bigbucks/
-
-            ssh ubuntu@192.168.30.10 '
-                cd ~/bigbucks &&
-                python3 app.py
-            
-        """
+                sh '''
+                sudo cp -r * /var/www/flask-app/
+                sudo systemctl restart flask-surveillance
+                '''
 
             }
         }
