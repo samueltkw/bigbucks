@@ -19,7 +19,7 @@ pipeline {
 
         sh """
             scp -r . ubuntu@192.168.30.10:/var/www/html
-            python3 /var/www/html/app.py
+            python3 /var/www/html/monitor/app.py
         """
 
             }
