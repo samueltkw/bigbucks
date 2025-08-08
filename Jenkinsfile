@@ -18,7 +18,7 @@ pipeline {
                 echo 'Deploying to server...'
 
         sh """
-            scp -r ./monitor ubuntu@192.168.30.10:/var/www/html
+            scp -r . ubuntu@192.168.30.10:/var/www/html
             python3 /var/www/html/app.py
         """
 
