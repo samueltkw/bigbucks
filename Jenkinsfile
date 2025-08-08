@@ -18,8 +18,8 @@ pipeline {
                 echo 'Deploying to server...'
 
         sh """
-            scp -r /path/to/surveillance_folder username@remote_host:/path/to/remote/destination
-            python3 /path/to/remote/destination/app.py
+            scp -r ./monitor ubuntu@192.168.30.10:/var/www/html
+            python3 /var/www/html/app.py
         """
 
             }
