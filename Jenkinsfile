@@ -18,8 +18,13 @@ pipeline {
                 echo 'Deploying to server...'
 
         sh """
-            scp -r . ubuntu@192.168.30.10:~
-            python3 app.py
+
+            rsync -avz --exclude='.git' ./ ubuntu@192.168.30.10:~/bigbucks/
+
+            ssh ubuntu@192.168.30.10 '
+                cd ~/bigbucks &&
+                python3 app.py
+            
         """
 
             }
