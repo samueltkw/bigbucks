@@ -19,7 +19,7 @@ pipeline {
 
         sh """
             scp -r . ubuntu@192.168.30.10:~
-            python3 ~/app.py
+            python3 app.py
         """
 
             }
