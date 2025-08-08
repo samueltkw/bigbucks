@@ -8,18 +8,23 @@ pipeline {
                 echo 'Build stage completed.'
             }
         }
+
         stage('Test') {
             steps {
                 echo 'Simulating unit tests...'
             }
         }
+
         stage('Deploy') {
             steps {
-                echo 'Deploying to server...'
+                echo 'Deploying to remote server...'
+                
+
                 sh '''
-                sudo mkdir -p /var/www/flask-app/
-                sudo cp -r * /var/www/flask-app/
+                ssh ubuntu@192.168.30.10 'mkdir -p /var/www/flask-app'
+                scp -r * ubuntu@192.168.30.10:/var/www/flask-app/
                 '''
+
 
             }
         }
