@@ -17,6 +17,7 @@ pipeline {
             steps {
                 echo 'Deploying to server...'
                 sh '''
+                sudo mkdir -p /var/www/flask-app/
                 sudo cp -r * /var/www/flask-app/
                 sudo systemctl restart flask-surveillance
                 '''
