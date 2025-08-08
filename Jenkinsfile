@@ -5,7 +5,7 @@ pipeline {
         stage('Build') {
             steps {
                 echo 'Cloning source code...'
-+                git branch: 'main', url: 'https://github.com/samueltkw/bigbucks.git'
+                git branch: 'main', url: 'https://github.com/samueltkw/bigbucks.git'
                # git 'https://github.com/samueltkw/bigbucks.git'
             }
         }
