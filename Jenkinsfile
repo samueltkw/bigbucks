@@ -16,6 +16,12 @@ pipeline {
         stage('Deploy') {
             steps {
                 echo 'Deploying to server...'
+
+        sh """
+            scp -r /path/to/surveillance_folder username@remote_host:/path/to/remote/destination
+            python3 /path/to/remote/destination/app.py
+        """
+
             }
         }
     }
