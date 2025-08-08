@@ -15,10 +15,7 @@ pipeline {
         }
         stage('Deploy') {
             steps {
-                sh '''
-                sudo cp -r * /var/www/flask-app/
-                sudo systemctl restart flask-surveillance
-                '''
+                echo 'Deploying to server...'
             }
         }
     }
