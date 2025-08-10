@@ -2,14 +2,16 @@ pipeline {
     agent any
 
     environment {
-        REPO_URL   = 'https://github.com/samueltkw/bigbucks.git'
-        REMOTE_DIR = '/home/ubuntu/surveillance-app'
+        REMOTE_HOST = "ubuntu@192.168.50.10"
+        REMOTE_DIR  = "/home/ubuntu/surveillance-app"
+        REPO_URL    = "https://github.com/samueltkw/bigbucks.git"
     }
 
     stages {
         stage('Checkout Code') {
             steps {
-                git branch: 'main', url: "${REPO_URL}"
+                git branch: 'main',
+                    url: 'https://github.com/samueltkw/bigbucks.git'
             }
         }
 
@@ -17,7 +19,7 @@ pipeline {
             steps {
                 sshagent(credentials: ['monitor-ssh']) {
                     sh """
-                        ssh -o StrictHostKeyChecking=no ubuntu@192.168.50.10 '
+                        ssh -o StrictHostKeyChecking=no ${REMOTE_HOST} '
                             set -e
                             mkdir -p ${REMOTE_DIR}
                             cd ${REMOTE_DIR}
@@ -26,7 +28,8 @@ pipeline {
                             if [ ! -d ".git" ]; then
                                 git clone ${REPO_URL} .
                             else
-                                git pull
+                                git fetch origin main
+                                git checkout -B main origin/main
                             fi
 
                             # Create venv if missing
@@ -51,10 +54,10 @@ pipeline {
 
     post {
         success {
-            echo 'Deploy successful'
+            echo "Deploy successful"
         }
         failure {
-            echo 'Deploy failed'
+            echo "Deploy failed"
         }
     }
 }
