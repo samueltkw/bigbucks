@@ -33,7 +33,7 @@ pipeline {
                         '''
                     } else {
                         // Remote deployment
-                        sshagent(credentials: ['ubuntu']) {
+                        sshagent(['monitor-ssh']) {
                             sh '''
                             ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} "
                                 set -e
