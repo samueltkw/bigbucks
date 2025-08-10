@@ -1,57 +1,64 @@
 pipeline {
-  agent any
-  environment {
-    TARGET_HOST = '192.168.50.10'              // Monitor server IP
-    APP_DIR     = '/home/ubuntu/surveillance-app'
-  }
-  stages {
-    stage('Checkout') {
-      steps {
-        git url: 'https://github.com/samueltkw/bigbucks.git', branch: 'main'
-      }
+    agent any
+
+    environment {
+        REMOTE_HOST = "192.168.50.10"
+        REMOTE_USER = "ubuntu"
+        REMOTE_DIR  = "/home/ubuntu/surveillance-app"
+        SSH_CRED_ID = "monitor-ssh" // Jenkins SSH key credentials ID
+        REPO_URL    = "https://github.com/<yourusername>/<your-repo>.git"
     }
-    stage('Build') {
-      steps {
-        sh 'python3 -V'
-        sh 'echo "Static checks placeholder"'
-      }
-    }
-    stage('Test') {
-      steps {
-        sh 'echo "Run unit tests here (skipped for now)"'
-      }
-    }
-    stage('Deploy') {
-      steps {
-        sshagent(credentials: ['monitor-ssh']) {
-          // Ensure dirs/venv on target
-          sh """
-            ssh -o StrictHostKeyChecking=yes ubuntu@${TARGET_HOST} \\
-              'mkdir -p ${APP_DIR} && python3 -m venv ${APP_DIR}/venv || true'
-          """
-          // Sync code
-          sh """
-            rsync -az --delete \\
-              --rsh='ssh -o StrictHostKeyChecking=yes' \\
-              ./ ubuntu@${TARGET_HOST}:${APP_DIR}/
-          """
-          // Install deps and (re)start service
-          sh """
-            ssh ubuntu@${TARGET_HOST} '
-              set -e
-              cd ${APP_DIR}
-              ${APP_DIR}/venv/bin/pip install --upgrade pip
-              ${APP_DIR}/venv/bin/pip install -r requirements.txt
-              sudo systemctl restart bigbucks || sudo systemctl start bigbucks
-              sudo systemctl is-active --quiet bigbucks
-            '
-          """
+
+    stages {
+        stage('Checkout Code') {
+            steps {
+                git branch: 'main',
+                    url: "${REPO_URL}"
+            }
         }
-      }
+
+        stage('Deploy to Monitor') {
+            steps {
+                sshagent([SSH_CRED_ID]) {
+                    sh '''
+                        ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} '
+                            set -e
+                            mkdir -p ${REMOTE_DIR}
+                            cd ${REMOTE_DIR}
+
+                            # If empty folder, clone repo
+                            if [ ! -d ".git" ]; then
+                                git clone ${REPO_URL} .
+                            else
+                                git pull
+                            fi
+
+                            # Always ensure venv exists
+                            if [ ! -d "venv" ]; then
+                                python3 -m venv venv
+                            fi
+
+                            ./venv/bin/pip install --upgrade pip
+                            ./venv/bin/pip install -r requirements.txt
+
+                            # Kill any existing Flask dev server
+                            pkill -f "python.*app.py" || true
+
+                            # Start Flask app in background
+                            nohup ./venv/bin/python app.py > app.log 2>&1 &
+                        '
+                    '''
+                }
+            }
+        }
     }
-  }
-  post {
-    success { echo 'Deploy OK' }
-    failure { echo 'Deploy failed' }
-  }
+
+    post {
+        failure {
+            echo "Deploy failed"
+        }
+        success {
+            echo "Deploy succeeded"
+        }
+    }
 }
