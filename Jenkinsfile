@@ -2,62 +2,61 @@ pipeline {
     agent any
 
     environment {
-        REMOTE_HOST = "ubuntu@192.168.50.10"
-        REMOTE_DIR  = "/home/ubuntu/surveillance-app"
-        REPO_URL    = "https://github.com/samueltkw/bigbucks.git"
+        // Set to "local" if Jenkins is on the same server as the app
+        DEPLOY_MODE = "remote"  // options: local or remote
+
+        // Remote deploy settings
+        REMOTE_USER = "ubuntu"
+        REMOTE_HOST = "192.168.50.10"
+        REMOTE_DIR = "/var/www/flask-app"
+        SERVICE_NAME = "flask-surveillance"
     }
 
     stages {
         stage('Checkout Code') {
             steps {
-                git branch: 'main',
-                    url: 'https://github.com/samueltkw/bigbucks.git'
+                git branch: 'main', url: 'https://github.com/samueltkw/bigbucks.git'
+                echo 'Code checked out successfully.'
             }
         }
 
-        stage('Deploy to Monitor') {
+        stage('Deploy') {
             steps {
-                sshagent(credentials: ['monitor-ssh']) {
-                    sh """
-                        ssh -o StrictHostKeyChecking=no ${REMOTE_HOST} '
-                            set -e
-                            mkdir -p ${REMOTE_DIR}
-                            cd ${REMOTE_DIR}
+                script {
+                    if (DEPLOY_MODE == "local") {
+                        // Local deployment
+                        sh '''
+                        sudo mkdir -p ${REMOTE_DIR}
+                        sudo cp -r app.py requirements.txt templates static ${REMOTE_DIR}/
+                        sudo ${REMOTE_DIR}/venv/bin/pip install -r ${REMOTE_DIR}/requirements.txt
+                        sudo systemctl restart ${SERVICE_NAME}
+                        '''
+                    } else {
+                        // Remote deployment
+                        sshagent(credentials: ['ubuntu']) {
+                            sh '''
+                            ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} "
+                                set -e
+                                sudo mkdir -p ${REMOTE_DIR}
+                                cd ${REMOTE_DIR}
+                                if [ ! -d venv ]; then
+                                    python3 -m venv venv
+                                fi
+                            "
 
-                            # Clone repo if empty, else pull latest
-                            if [ ! -d ".git" ]; then
-                                git clone ${REPO_URL} .
-                            else
-                                git fetch origin main
-                                git checkout -B main origin/main
-                            fi
+                            scp -o StrictHostKeyChecking=no \
+                                -r app.py requirements.txt templates static \
+                                ${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_DIR}/
 
-                            # Create venv if missing
-                            if [ ! -d "venv" ]; then
-                                python3 -m venv venv
-                            fi
-
-                            ./venv/bin/pip install --upgrade pip
-                            ./venv/bin/pip install -r requirements.txt
-
-                            # Kill existing Flask process
-                            pkill -f "python.*app.py" || true
-
-                            # Start Flask app in background
-                            nohup ./venv/bin/python app.py > app.log 2>&1 &
-                        '
-                    """
+                            ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} "
+                                ${REMOTE_DIR}/venv/bin/pip install -r ${REMOTE_DIR}/requirements.txt
+                                sudo systemctl restart ${SERVICE_NAME}
+                            "
+                            '''
+                        }
+                    }
                 }
             }
-        }
-    }
-
-    post {
-        success {
-            echo "Deploy successful"
-        }
-        failure {
-            echo "Deploy failed"
         }
     }
 }
