@@ -6,7 +6,7 @@ pipeline {
         REMOTE_USER = "ubuntu"
         REMOTE_DIR  = "/home/ubuntu/surveillance-app"
         SSH_CRED_ID = "monitor-ssh" // Jenkins SSH key credentials ID
-        REPO_URL    = "https://github.com/<yourusername>/<your-repo>.git"
+        REPO_URL    = "https://github.com/samueltkw/bigbucks.git"
     }
 
     stages {
