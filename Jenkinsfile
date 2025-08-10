@@ -40,7 +40,7 @@ pipeline {
                             ./venv/bin/pip install -r requirements.txt
 
                             pkill -f "python.*app.py" || true
-                            nohup ./venv/bin/python app.py > app.log 2>&1 &
+                            nohup ./venv/bin/python app.py --host=0.0.0.0 > app.log 2>&1 &
                         '
                     """
                 }
@@ -53,4 +53,7 @@ pipeline {
             echo "Deploy succeeded"
         }
         failure {
-            echo "Deploy f
+            echo "Deploy failed"
+        }
+    }
+}
