@@ -24,3 +24,37 @@ pipeline {
 
                             # Clone repo if empty, else pull latest
                             if [ ! -d ".git" ]; then
+                                git clone ${REPO_URL} .
+                            else
+                                git pull
+                            fi
+
+                            # Create venv if missing
+                            if [ ! -d "venv" ]; then
+                                python3 -m venv venv
+                            fi
+
+                            ./venv/bin/pip install --upgrade pip
+                            ./venv/bin/pip install -r requirements.txt
+
+                            # Kill existing Flask process
+                            pkill -f "python.*app.py" || true
+
+                            # Start Flask app in background
+                            nohup ./venv/bin/python app.py > app.log 2>&1 &
+                        '
+                    """
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Deploy successful'
+        }
+        failure {
+            echo 'Deploy failed'
+        }
+    }
+}
